@@ -1,0 +1,30 @@
+{
+  "name": "create-fullstack-app",
+  "version": "1.0.0",
+  "description": "Package to init fully configured fullstack apps",
+  "homepage": "https://github.com/Gajjar-Mohit/create-fullstack-app#readme",
+  "bugs": {
+    "url": "https://github.com/Gajjar-Mohit/create-fullstack-app/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gajjar-Mohit/create-fullstack-app.git"
+  },
+  "keywords": [
+    "create",
+    "fullstack",
+    "app",
+    "boilerplate",
+    "template"
+  ],
+  "license": "ISC",
+  "author": "Mohit Gajjar",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "typescript": "^5.8.3"
+  }
+}
