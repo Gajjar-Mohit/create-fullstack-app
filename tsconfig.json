@@ -1,14 +1,19 @@
 {
   "compilerOptions": {
-    "target": "es2019",
-    "moduleResolution": "bundler",
+    "target": "es6",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./src",
     "strict": true,
-    "resolveJsonModule": true,
     "esModuleInterop": true,
-    "skipLibCheck": false
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
   },
+  "include": [
+    "src"
+  ],
   "exclude": [
-    "templates",
+    "node_modules",
     "dist"
   ]
 }

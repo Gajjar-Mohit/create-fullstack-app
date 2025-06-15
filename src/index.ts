@@ -1,17 +1,20 @@
 #!/usr/bin/env node
-import packageJson from "../package.json";
 import type { InitialReturnValue } from "prompts";
 import prompts from "prompts";
 let projectPath: string = "";
 import { Command } from "commander";
 import { getPkgManager, PackageManager } from "./helper/get-pkg-manager";
-import Conf from "conf";
+// import Conf from "conf";
 import { validateNpmName } from "./helper/validate-pkg";
-import { basename, resolve } from "path";
-import { blue, bold, cyan, green, red } from "picocolors";
-import { existsSync } from "fs";
+import { basename, resolve } from "node:path";
+import { blue, blueBright, bold, cyan, green, red } from "picocolors";
+import { existsSync } from "node:fs";
 import { isFolderEmpty } from "./helper/is-folder-empty";
 import ciInfo from "ci-info";
+import { DownloadError } from "./create-app";
+
+const packageVersion = "1.0.0";
+const packageName = "create-fullstack-app";
 
 const handleSigTerm = () => process.exit(0);
 
@@ -30,9 +33,9 @@ const onPromptState = (state: {
   }
 };
 
-const program = new Command(packageJson.name)
+const program = new Command(packageName)
   .version(
-    packageJson.version,
+    packageVersion,
     "-v, --version",
     "Output the current version of create-fullstack-app."
   )
@@ -42,10 +45,6 @@ const program = new Command(packageJson.name)
   .option("--b, --backend", "Initialize a saperate backend also.")
   .option("--prisma", "Initialize with prisma (default)")
   .option("--mongodb", "Initialize with mongodb")
-  .option(
-    "--reset, --reset-preferences",
-    "Reset the preferences saved for create-next-app."
-  )
   .option(
     "--use-npm",
     "Explicitly tell the CLI to bootstrap the application using npm."
@@ -83,28 +82,22 @@ const packageManager: PackageManager = !!opts.useNpm
   ? "bun"
   : getPkgManager();
 
-async function run(): Promise<void> {
-  const conf = new Conf({
-    projectName: "create-fullstack-app",
-  });
-
-  if (opts.resetPreferences) {
-    const { resetPreferences } = await prompts({
-      onState: onPromptState,
-      type: "toggle",
-      name: "resetPreferences",
-      message: "Would you like ot reset the saved preferences?",
-      initial: false,
-      active: "Yes",
-      inactive: "No",
-    });
-    if (resetPreferences) {
-      conf.clear();
-      console.log("The preferences have been reset succesfully!");
-    }
-    process.exit(0);
+async function exit(reason: { command?: string }) {
+  console.log();
+  console.log("Aborting installation.");
+  if (reason.command) {
+    console.log(`  ${cyan(reason.command)} has failed.`);
+  } else {
+    console.log(
+      red("Unexpected error. Please report it as a bug:") + "\n",
+      reason
+    );
   }
-
+  console.log();
+  // await notifyUpdate();
+  process.exit(1);
+}
+async function run(): Promise<void> {
   if (typeof projectPath === "string") {
     projectPath = projectPath.trim();
   }
@@ -156,56 +149,62 @@ async function run(): Promise<void> {
   if (existsSync(appPath) && !isFolderEmpty) {
     process.exit(0);
   }
-  const preferences = (conf.get("preferences") || {}) as Record<
-    string,
-    boolean | string
-  >;
 
-  const skipPrompt = ciInfo.isCI || opts.yes;
-
-  const defaults: typeof preferences = {
-    typescript: true,
-    eslint: false,
-    tailwind: false,
-    app: true,
-    srcDir: false,
-    importAlias: "@/*",
-    customizeImportsAlias: false,
-    empty: false,
-    turbopack: true,
-    disableGit: false,
-  };
-
-  const getPrefOrDefault = (field: string) =>
-    preferences[field] ?? defaults[field];
-
-  if (!opts.typescript && !opts.javascript) {
-    if (skipPrompt) {
-      opts.typescript = getPrefOrDefault("typescript");
+  // const skipPrompt = ciInfo.isCI || opts.yes;
+  const styledTypeScript = blue("Typescript");
+  const { typescript } = await prompts(
+    {
+      type: "toggle",
+      name: "typescript",
+      message: `Would you like to use ${styledTypeScript}?`,
+      initial: "Yes",
+      active: "Yes",
+      inactive: "No",
+    },
+    {
+      onCancel: () => {
+        console.error("Existing.");
+        process.exit(1);
+      },
+    }
+  );
+  opts.typescript = Boolean(typescript);
+  opts.javascript = !Boolean(typescript);
+  const { requiredDb } = await prompts({
+    type: "toggle",
+    name: "requiredDb",
+    message: "Would you required database?",
+    initial: "Yes",
+    active: "Yes",
+    inactive: "No",
+  });
+  const styledMongoDb = green("MongoDb");
+  const styledPostgress = blueBright("Postgress");
+  let selectedDb;
+  if (requiredDb) {
+    const { db } = await prompts({
+      type: "toggle",
+      name: "db",
+      message: "Which db provider you want to use?",
+      initial: styledPostgress,
+      active: styledPostgress,
+      inactive: styledMongoDb,
+    });
+    console.log(db);
+    if (db) {
+      selectedDb = "Postgress";
     } else {
-      const styledTypeScript = blue("TypeScript");
-      const { typescript } = await prompts(
-        {
-          type: "toggle",
-          name: "typescript",
-          message: `Would you like to use ${styledTypeScript}`,
-          initial: getPrefOrDefault("typescript"),
-          active: "Yes",
-          inactive: "No",
-        },
-        {
-          onCancel: () => {
-            console.error("Existing.");
-            process.exit(1);
-          },
-        }
-      );
-      opts.typescript = Boolean(typescript);
-      opts.javascript = !Boolean(typescript);
-      preferences.typescript = Boolean(typescript);
+      selectedDb = "MongoDb";
     }
   }
+
   try {
+    console.log({
+      typescript: typescript,
+      name: appName,
+      requiredDb: requiredDb,
+      selectedDb: selectedDb,
+    });
     // create app
   } catch (reason) {
     if (!(reason instanceof DownloadError)) {
@@ -213,3 +212,4 @@ async function run(): Promise<void> {
     }
   }
 }
+run().catch(exit);

@@ -21,11 +21,14 @@
     "template"
   ],
   "license": "ISC",
-  "author": "Mohit Gajjar",
-  "type": "commonjs",
+  "author": "Mohit Gajjar <dev.acc.mg@gmail.com>",
   "main": "dist/index.js",
+  "source": "src/index.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc && npm link"
   },
   "dependencies": {
     "@types/ci-info": "^2.0.0",
@@ -34,6 +37,7 @@
     "@types/prompts": "^2.4.9",
     "@types/typescript": "^0.4.29",
     "@types/validate-npm-package-name": "^4.0.2",
+    "@vercel/ncc": "^0.38.3",
     "ci-info": "^4.2.0",
     "commander": "^14.0.0",
     "conf": "^14.0.0",
@@ -43,6 +47,10 @@
     "validate-npm-package-name": "^6.0.1"
   },
   "devDependencies": {
-    "@types/node": "^24.0.1"
+    "@types/node": "^24.0.1",
+    "ts-node": "^10.9.2"
+  },
+  "engines": {
+    "node": ">=18.18.0"
   }
 }
